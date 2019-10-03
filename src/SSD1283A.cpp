@@ -81,9 +81,13 @@ void SSD1283A::init(void)
     0x12, 0x0609,
     0x13, 0x3100,
   };
+  //Serial.println("init() 1");
   _init_table16(SSD1283A_regValues, sizeof(SSD1283A_regValues));
+  //Serial.println("init() 2");
   setRotation(_rotation);
+  //Serial.println("init() 3");
   invertDisplay(false);
+  //Serial.println("init() 4");
 }
 
 void SSD1283A::setBackLight(bool lit)
@@ -343,9 +347,9 @@ void SSD1283A::setRotation(uint8_t r)
       _writeCmdData16(0x03, 0x6838);
       break;
   }
+  _endTransaction();
   setWindowAddress(0, 0, _width - 1, _height - 1);
   setVerticalScroll(0, HEIGHT, 0);
-  _endTransaction();
 }
 
 //get current rotation
