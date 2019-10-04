@@ -6,7 +6,9 @@ The code is extracted from LCDWIKI_SPI and adapted for single controller use and
 
 Only HW SPI is supported.
 
-### Version 0.0.3
+### Version 0.0.4
+- fix some copy/past or replace errors
+#### Version 0.0.3
 - added example graphicstest_through_canvas.ino
 - added faster pushColors() method, optimized for ESP32, ESP8266
 #### Version 0.0.2

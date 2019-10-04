@@ -1,4 +1,4 @@
-/* Modified by Bodmer to be an example for canvas_HX8357 library.
+/* Modified by Bodmer to be an example for TFT_HX8357 library.
    This sketch uses the GLCD font only.
 
    The performance for each test is reported to the serial
@@ -16,23 +16,23 @@
    not applicable to the HX8357 display supported by this example.
 */
 
-// modified by Jean-Marc Zingg to be an example for the SSD1283A library (from Gxcanvas library)
-// original source taken from https://github.com/Bodmer/canvas_HX8357
+// modified by Jean-Marc Zingg to be an example for the SSD1283A library (from GxTFT library)
+// original source taken from https://github.com/Bodmer/TFT_HX8357
 
 #include <SSD1283A.h> //Hardware-specific library
 
 // example: for my proto board with Wemos D1 mini
-//SSD1283A_GUI screen(/*CS=D8*/ SS, /*DC=D3*/ 0, /*RST=D4*/ 2, /*LED=D2*/ 4); //hardware spi,cs,cd,reset,led
+//SSD1283A screen(/*CS=D8*/ SS, /*DC=D3*/ 0, /*RST=D4*/ 2, /*LED=D2*/ 4); //hardware spi,cs,cd,reset,led
 
 // for my wirings used for e-paper displays:
 #if defined (ESP8266)
-SSD1283A_GUI screen(/*CS=D8*/ SS, /*DC=D3*/ 0, /*RST=D4*/ 2, /*LED=D2*/ 4); //hardware spi,cs,cd,reset,led
+SSD1283A screen(/*CS=D8*/ SS, /*DC=D3*/ 0, /*RST=D4*/ 2, /*LED=D2*/ 4); //hardware spi,cs,cd,reset,led
 #elif defined(ESP32)
-SSD1283A_GUI screen(/*CS=5*/ SS, /*DC=*/ 17, /*RST=*/ 16, /*LED=*/ 4); //hardware spi,cs,cd,reset,led
+SSD1283A screen(/*CS=5*/ SS, /*DC=*/ 17, /*RST=*/ 16, /*LED=*/ 4); //hardware spi,cs,cd,reset,led
 #elif defined(_BOARD_GENERIC_STM32F103C_H_)
-SSD1283A_GUI screen(/*CS=4*/ SS, /*DC=*/ 3, /*RST=*/ 2, /*LED=*/ 1); //hardware spi,cs,cd,reset,led
+SSD1283A screen(/*CS=4*/ SS, /*DC=*/ 3, /*RST=*/ 2, /*LED=*/ 1); //hardware spi,cs,cd,reset,led
 #elif defined(__AVR)
-SSD1283A_GUI screen(/*CS=10*/ SS, /*DC=*/ 8, /*RST=*/ 9, /*LED=*/ 7); //hardware spi,cs,cd,reset,led
+SSD1283A screen(/*CS=10*/ SS, /*DC=*/ 8, /*RST=*/ 9, /*LED=*/ 7); //hardware spi,cs,cd,reset,led
 #endif
 
 GFXcanvas16 canvas(130, 130);
