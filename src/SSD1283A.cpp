@@ -8,12 +8,15 @@
 #include <SPI.h>
 #include "SSD1283A.h"
 
+#define SPI_SPEED 27000000
+//#define SPI_SPEED 4000000
+
 #define TFTLCD_DELAY16  0xFFFF
 
 #ifndef _ADAFRUIT_GFX_H
-SSD1283A::SSD1283A(int8_t cs, int8_t cd, int8_t rst, int8_t led) : _spi_settings(27000000, MSBFIRST, SPI_MODE0)
+SSD1283A::SSD1283A(int8_t cs, int8_t cd, int8_t rst, int8_t led) : _spi_settings(SPI_SPEED, MSBFIRST, SPI_MODE0)
 #else
-SSD1283A::SSD1283A(int8_t cs, int8_t cd, int8_t rst, int8_t led) : Adafruit_GFX(130, 130), _spi_settings(27000000, MSBFIRST, SPI_MODE0)
+SSD1283A::SSD1283A(int8_t cs, int8_t cd, int8_t rst, int8_t led) : Adafruit_GFX(130, 130), _spi_settings(SPI_SPEED, MSBFIRST, SPI_MODE0)
 #endif
 {
   _cs = cs;
@@ -45,7 +48,7 @@ void SSD1283A::init(void)
 {
   digitalWrite(_cs, HIGH);
   SPI.begin();
-  //SPI.beginTransaction( { 27000000, MSBFIRST, SPI_MODE0 } );
+  //SPI.beginTransaction( { SPI_SPEED, MSBFIRST, SPI_MODE0 } );
   if (_rst >= 0)
   {
     digitalWrite(_rst, LOW);
@@ -225,6 +228,53 @@ void SSD1283A::pushColors(uint16_t * block, int16_t n, bool first, uint8_t flags
     }
     _writeData16(color);
   }
+  _endTransaction();
+}
+
+void SSD1283A::pushColors(uint16_t * block, uint16_t n)
+{
+  uint16_t color;
+  _startTransaction();
+  digitalWrite(_cd, HIGH);
+#if (defined (ESP8266) || defined(ESP32)) && true // faster
+  //SPI.transfer(block, 2 * n); // don't use this, it overwrites block with bytes read
+  //SPI.transferBytes((uint8_t*)block, 0, 2 * n); // wrong endian, wrong colors
+  uint8_t t;
+  uint8_t* p1 = (uint8_t*) block;
+  uint8_t* p2 = p1 + 1;
+  uint16_t n1 = n;
+  while (n1-- > 0)
+  {
+    t = *p1;
+    *p1 = *p2;
+    *p2 = t;
+    p1 += 2;
+    p2 += 2;
+  }
+  SPI.transferBytes((uint8_t*)block, 0, 2 * n);
+  p1 = (uint8_t*) block;
+  p2 = p1 + 1;
+  n1 = n;
+  while (n1-- > 0)
+  {
+    t = *p1;
+    *p1 = *p2;
+    *p2 = t;
+    p1 += 2;
+    p2 += 2;
+  }
+#else
+  while (n-- > 0)
+  {
+    color = (*block++);
+#if (defined (ESP8266) || defined(ESP32)) && true // faster
+    SPI.write16(color);
+#else
+    SPI.transfer(color >> 8);
+    SPI.transfer(color);
+#endif
+  }
+#endif
   _endTransaction();
 }
 

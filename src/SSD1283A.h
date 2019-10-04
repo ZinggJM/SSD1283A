@@ -40,6 +40,7 @@ class SSD1283A : public Adafruit_GFX
     void invertDisplay(boolean i);
     void setWindowAddress(int16_t x1, int16_t y1, int16_t x2, int16_t y2);
     void pushColors(uint16_t * block, int16_t n, bool first, uint8_t flags);
+    void pushColors(uint16_t * block, uint16_t n); // fast one
     void setVerticalScroll(int16_t top, int16_t scrollines, int16_t offset);
     int16_t getHeight(void) const;
     int16_t getWidth(void) const;
