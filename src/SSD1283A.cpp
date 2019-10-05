@@ -231,42 +231,16 @@ void SSD1283A::pushColors(uint16_t * block, int16_t n, bool first, uint8_t flags
   _endTransaction();
 }
 
-void SSD1283A::pushColors(uint16_t * block, uint16_t n)
+void SSD1283A::pushColors(const uint16_t* data, uint16_t n)
 {
-  uint16_t color;
   _startTransaction();
   digitalWrite(_cd, HIGH);
-#if (defined (ESP8266) || defined(ESP32)) && true // faster
-  //SPI.transfer(block, 2 * n); // don't use this, it overwrites block with bytes read
-  //SPI.transferBytes((uint8_t*)block, 0, 2 * n); // wrong endian, wrong colors
-  uint8_t t;
-  uint8_t* p1 = (uint8_t*) block;
-  uint8_t* p2 = p1 + 1;
-  uint16_t n1 = n;
-  while (n1-- > 0)
-  {
-    t = *p1;
-    *p1 = *p2;
-    *p2 = t;
-    p1 += 2;
-    p2 += 2;
-  }
-  SPI.transferBytes((uint8_t*)block, 0, 2 * n);
-  p1 = (uint8_t*) block;
-  p2 = p1 + 1;
-  n1 = n;
-  while (n1-- > 0)
-  {
-    t = *p1;
-    *p1 = *p2;
-    *p2 = t;
-    p1 += 2;
-    p2 += 2;
-  }
+#if (defined (ESP8266) || defined(ESP32) || (TEENSYDUINO == 147)) && true // faster
+  _pushColorsFastWithByteSwapping(data, n);
 #else
   while (n-- > 0)
   {
-    color = (*block++);
+    uint16_t color = (*data++);
 #if (defined (ESP8266) || defined(ESP32)) && true // faster
     SPI.write16(color);
 #else
@@ -276,6 +250,40 @@ void SSD1283A::pushColors(uint16_t * block, uint16_t n)
   }
 #endif
   _endTransaction();
+}
+
+void SSD1283A::_pushColorsFast(const uint16_t* data, uint16_t n)
+{
+#if (defined(NOT_YET_KNOWN_PROCESSOR) || defined(TEENSYDUINO)) // just in case 
+  SPI.transfer((uint8_t*)data, 0, 2 * n);
+#endif
+}
+
+void SSD1283A::_pushColorsFastWithByteSwapping(const uint16_t* data, uint16_t n)
+{
+  static const uint16_t swap_buffer_size = 64; // optimal for ESP8266 SPI
+  static const uint16_t max_chunk = swap_buffer_size / 2; // uint16_t's
+  uint8_t swap_buffer[swap_buffer_size];
+  const uint8_t* p1 = reinterpret_cast<const uint8_t*> (data);
+  const uint8_t* p2 = p1 + 1;
+  while (n > 0)
+  {
+    uint16_t chunk = min(max_chunk, n);
+    n -= chunk;
+    uint8_t* p3 = swap_buffer;
+    uint8_t* p4 = p3 + 1;
+    uint16_t ncopy = chunk;
+    while (ncopy-- > 0)
+    {
+      *p3 = *p2; p3 += 2; p2 += 2;
+      *p4 = *p1; p4 += 2; p1 += 2;
+    }
+#if (defined (ESP8266) || defined(ESP32))
+    SPI.transferBytes(swap_buffer, 0, 2 * chunk);
+#else
+    SPI.transfer(swap_buffer, 0, 2 * chunk);
+#endif
+  }
 }
 
 void SSD1283A::drawPixel(int16_t x, int16_t y, uint16_t color)

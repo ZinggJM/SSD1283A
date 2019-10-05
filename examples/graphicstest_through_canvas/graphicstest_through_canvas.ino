@@ -10,7 +10,7 @@
    comparisons.
 
    Make sure all the required font is loaded by editting the
-   User_Setup.h file in the Gxcanvas library folder.
+   User_Setup.h file in the TFT_HX8357 library folder.
 
    Original header is at the end of the sketch, some text in it is
    not applicable to the HX8357 display supported by this example.
@@ -21,17 +21,24 @@
 
 #include <SSD1283A.h> //Hardware-specific library
 
-// example: for my proto board with Wemos D1 mini
-//SSD1283A screen(/*CS=D8*/ SS, /*DC=D3*/ 0, /*RST=D4*/ 2, /*LED=D2*/ 4); //hardware spi,cs,cd,reset,led
+// adapt the constructor parameters to your wiring for the appropriate processor conditional, 
+// or add a new one or adapt the catch all other default
+
+#if (defined(TEENSYDUINO) || (TEENSYDUINO == 147))
+// for Mike's Artificial Horizon
+SSD1283A screen(/*CS=*/ 10, /*DC=*/ 15, /*RST=*/ 14, /*LED=*/ -1); //hardware spi,cs,cd,reset,led
 
 // for my wirings used for e-paper displays:
-#if defined (ESP8266)
+#elif defined (ESP8266)
 SSD1283A screen(/*CS=D8*/ SS, /*DC=D3*/ 0, /*RST=D4*/ 2, /*LED=D2*/ 4); //hardware spi,cs,cd,reset,led
 #elif defined(ESP32)
 SSD1283A screen(/*CS=5*/ SS, /*DC=*/ 17, /*RST=*/ 16, /*LED=*/ 4); //hardware spi,cs,cd,reset,led
 #elif defined(_BOARD_GENERIC_STM32F103C_H_)
 SSD1283A screen(/*CS=4*/ SS, /*DC=*/ 3, /*RST=*/ 2, /*LED=*/ 1); //hardware spi,cs,cd,reset,led
 #elif defined(__AVR)
+SSD1283A screen(/*CS=10*/ SS, /*DC=*/ 8, /*RST=*/ 9, /*LED=*/ 7); //hardware spi,cs,cd,reset,led
+#else
+// catch all other default
 SSD1283A screen(/*CS=10*/ SS, /*DC=*/ 8, /*RST=*/ 9, /*LED=*/ 7); //hardware spi,cs,cd,reset,led
 #endif
 

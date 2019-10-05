@@ -6,7 +6,10 @@ The code is extracted from LCDWIKI_SPI and adapted for single controller use and
 
 Only HW SPI is supported.
 
-### Version 0.0.4
+### Version 0.0.5
+- fast pushColors() optimized also for Teensy 3.2
+- cleaner implementation of fast pushColors()
+#### Version 0.0.4
 - fix some copy/past or replace errors
 #### Version 0.0.3
 - added example graphicstest_through_canvas.ino
