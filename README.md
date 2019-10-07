@@ -6,7 +6,9 @@ The code is extracted from LCDWIKI_SPI and adapted for single controller use and
 
 Only HW SPI is supported.
 
-### Version 0.0.5
+### Version 0.0.6
+- fixed rotation
+#### Version 0.0.5
 - fast pushColors() optimized also for Teensy 3.2
 - cleaner implementation of fast pushColors()
 #### Version 0.0.4

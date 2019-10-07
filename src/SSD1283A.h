@@ -21,7 +21,7 @@
 #endif
 
 // include the graphics rendering class you want to use (or both)
-#include <LCDWIKI_GUI.h>
+//#include <LCDWIKI_GUI.h>
 #include <Adafruit_GFX.h>
 
 #ifndef _ADAFRUIT_GFX_H
@@ -64,7 +64,7 @@ class SSD1283A : public Adafruit_GFX
     uint16_t WIDTH, HEIGHT, _width, _height, _rotation;
   private:
     SPISettings _spi_settings;
-    int8_t   _cs, _cd, _rst, _led;
+    int8_t _cs, _cd, _rst, _led;
 };
 
 #ifdef _LCDWIKI_GUI_H_

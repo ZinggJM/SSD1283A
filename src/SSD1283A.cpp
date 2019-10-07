@@ -172,35 +172,54 @@ void SSD1283A::_writeCmdDataTransaction16(uint16_t cmd, uint16_t data)
 void SSD1283A::setWindowAddress(int16_t x1, int16_t y1, int16_t x2, int16_t y2)
 {
   _startTransaction();
-  int16_t t1, t2;
   switch (_rotation)
   {
     case 0:
-    case 2:
-      t1 = x1;
-      t2 = x2;
-      x1 = y1 + 2;
-      x2 = y2 + 2;
-      y1 = t1 + 2;
-      y2 = t2 + 2;
+      _writeCmd8(0x44);
+      _writeData8(x2 + 2);
+      _writeData8(x1 + 2);
+      _writeCmd8(0x45);
+      _writeData8(y2 + 2);
+      _writeData8(y1 + 2);
+      _writeCmd8(0x21);
+      _writeData8(y1 + 2);
+      _writeData8(x1 + 2);
       break;
     case 1:
+      _writeCmd8(0x44);
+      _writeData8(HEIGHT - y1 + 1);
+      _writeData8(HEIGHT - y2 + 1);
+      _writeCmd8(0x45);
+      _writeData8(WIDTH - x1 - 1);
+      _writeData8(WIDTH - x2 - 1);
+      _writeCmd8(0x21);
+      _writeData8(WIDTH - x2 - 1);
+      _writeData8(HEIGHT - y2 + 1);
+      break;
+    case 2:
+      _writeCmd8(0x44);
+      _writeData8(WIDTH - x1 + 1);
+      _writeData8(WIDTH - x2 + 1);
+      _writeCmd8(0x45);
+      _writeData8(HEIGHT - y1 + 1);
+      _writeData8(HEIGHT - y2 + 1);
+      _writeCmd8(0x21);
+      _writeData8(HEIGHT - y2 + 1);
+      _writeData8(WIDTH - x2 + 1);
+      break;
     case 3:
-      y1 = y1 + 2;
-      y2 = y2 + 2;
+      _writeCmd8(0x44);
+      _writeData8(y2 + 2);
+      _writeData8(y1 + 2);
+      _writeCmd8(0x45);
+      _writeData8(x2);
+      _writeData8(x1);
+      _writeCmd8(0x21);
+      _writeData8(x1);
+      _writeData8(y1 + 2);
       break;
   }
-  _writeCmd8(0x45);
-  _writeData8(x2);
-  _writeData8(x1);
-  _writeCmd8(0x44);
-  _writeData8(y2);
-  _writeData8(y1);
-  _writeCmd8(0x21);
-  _writeData8(x1);
-  _writeData8(y1);
   _writeCmd8(0x22);
-  //_writeData16(0xFFE0);
   _endTransaction();
 }
 
