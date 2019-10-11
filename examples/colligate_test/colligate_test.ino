@@ -6,7 +6,7 @@
 // adapt the constructor parameters to your wiring for the appropriate processor conditional, 
 // or add a new one or adapt the catch all other default
 
-#if (defined(TEENSYDUINO) || (TEENSYDUINO == 147))
+#if (defined(TEENSYDUINO) && (TEENSYDUINO == 147))
 // for Mike's Artificial Horizon
 SSD1283A_GUI my_lcd(/*CS=*/ 10, /*DC=*/ 15, /*RST=*/ 14, /*LED=*/ -1); //hardware spi,cs,cd,reset,led
 
@@ -496,6 +496,7 @@ void show_end(unsigned long run_time)
 
 void setup() 
 {
+  //Serial.begin(115200);
   my_lcd.init();
   my_lcd.Fill_Screen(0x0);  
   my_lcd.setRotation(1);  

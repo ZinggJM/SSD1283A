@@ -6,7 +6,20 @@ The code is extracted from LCDWIKI_SPI and adapted for single controller use and
 
 Only HW SPI is supported.
 
-### Version 0.0.6
+### General Remark
+
+The SSD1283A controller seems to have an issue with data entry modes.
+Only Mode 3 seems to work correctly, with both AM directions.
+
+Graphics drawing works with all 4 rotation directions, as far as tested (pushing same color).
+Bitmaps drawing, e.g. for canvas, using pushColors, works only correctly for rotation 0 and 3.
+Use rotation for drawing to the canvas, but use rotation 0 or 3 for pushing the canvas to screen.
+
+### Version 1.0.0
+- improved rotation somewhat, see general remarks
+- fixed clipping (drawPixel, fillRect)
+- optimizations and cleanup
+#### Version 0.0.6
 - fixed rotation
 #### Version 0.0.5
 - fast pushColors() optimized also for Teensy 3.2

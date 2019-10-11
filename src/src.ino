@@ -3,17 +3,21 @@
 #include <LCDWIKI_GUI.h> //Core graphics library
 #include "SSD1283A.h" //Hardware-specific library
 
-// example: for my proto board with Wemos D1 mini
-//SSD1283A_GUI my_lcd(/*CS=D8*/ SS, /*DC=D3*/ 0, /*RST=D4*/ 2, /*LED=D2*/ 4); //hardware spi,cs,cd,reset,led
+#if (defined(TEENSYDUINO) && (TEENSYDUINO == 147))
+// for Mike's Artificial Horizon
+SSD1283A_GUI mylcd(/*CS=*/ 10, /*DC=*/ 15, /*RST=*/ 14, /*LED=*/ -1); //hardware spi,cs,cd,reset,led
 
 // for my wirings used for e-paper displays:
-#if defined (ESP8266)
+#elif defined (ESP8266)
 SSD1283A_GUI mylcd(/*CS=D8*/ SS, /*DC=D3*/ 0, /*RST=D4*/ 2, /*LED=D2*/ 4); //hardware spi,cs,cd,reset,led
 #elif defined(ESP32)
 SSD1283A_GUI mylcd(/*CS=5*/ SS, /*DC=*/ 17, /*RST=*/ 16, /*LED=*/ 4); //hardware spi,cs,cd,reset,led
 #elif defined(_BOARD_GENERIC_STM32F103C_H_)
 SSD1283A_GUI mylcd(/*CS=4*/ SS, /*DC=*/ 3, /*RST=*/ 2, /*LED=*/ 1); //hardware spi,cs,cd,reset,led
 #elif defined(__AVR)
+SSD1283A_GUI mylcd(/*CS=10*/ SS, /*DC=*/ 8, /*RST=*/ 9, /*LED=*/ 7); //hardware spi,cs,cd,reset,led
+#else
+// catch all other default
 SSD1283A_GUI mylcd(/*CS=10*/ SS, /*DC=*/ 8, /*RST=*/ 9, /*LED=*/ 7); //hardware spi,cs,cd,reset,led
 #endif
 
@@ -70,12 +74,13 @@ void loop()
 }
 
 GFXcanvas16 canvas(130, 130);
+//GFXcanvas16 canvas(120, 120);
 
 void show_canvas_on_screen_timed()
 {
   uint32_t start = micros();
-  mylcd.setWindowAddress(0, 0, mylcd.width() - 1, mylcd.height() - 1);
-  //mylcd.pushColors(canvas.getBuffer(), canvas.width() * canvas.height(), true, 0); // 106ms
+  mylcd.setWindowAddress(0, 0, canvas.width() - 1, canvas.height() - 1);
+  //mylcd.setWindowAddress(5, 5, 5 + canvas.width() - 1, 5 + canvas.height() - 1);
   mylcd.pushColors(canvas.getBuffer(), canvas.width() * canvas.height()); // 86ms, 17ms on ESP8266, 24ms on ESP32
   uint32_t elapsed = micros() - start;
   Serial.print(F("show_canvas_on_screen    ")); Serial.println(elapsed);
@@ -109,6 +114,7 @@ void testTextOnCanvas()
   for (uint8_t r = 0; r < 4; r++)
   {
     mylcd.setRotation(r);
+    //mylcd.Fill_Screen(0x0000);
     show_canvas_on_screen_timed();
     delay(5000);
   }

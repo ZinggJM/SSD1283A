@@ -32,39 +32,45 @@ class SSD1283A : public Adafruit_GFX
 {
   public:
     SSD1283A(int8_t cs, int8_t cd, int8_t rst, int8_t led);
-    void init(void);
+    // (overridden) virtual methods
     virtual void drawPixel(int16_t x, int16_t y, uint16_t color);
-    void fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color);
-    void setRotation(uint8_t r);
-    uint8_t getRotation(void) const;
-    void invertDisplay(boolean i);
+    virtual void fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color);
+    virtual void drawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color); 
+    virtual void drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color); 
+    virtual void fillScreen(uint16_t color);  
+    virtual void setRotation(uint8_t r);
+    virtual void invertDisplay(bool i);
+    // other public methods
+    void init(void);
     void setWindowAddress(int16_t x1, int16_t y1, int16_t x2, int16_t y2);
-    void pushColors(uint16_t * block, int16_t n, bool first, uint8_t flags);
     void pushColors(const uint16_t* data, uint16_t n); // fast one
     void setVerticalScroll(int16_t top, int16_t scrollines, int16_t offset);
-    int16_t getHeight(void) const;
-    int16_t getWidth(void) const;
     void setBackLight(bool lit);
     uint16_t color565(uint8_t r, uint8_t g, uint8_t b);
+    // leftover methods from LCDWIKI_SPI or for LCDWIKI_GUI
+    void pushColors(uint16_t * block, int16_t n, bool first, uint8_t flags);
+    int16_t getWidth(void) const;
+    int16_t getHeight(void) const;
+    uint8_t getRotation(void) const;
   private:
     void _startTransaction();
     void _endTransaction();
-    void _writeCmd8(uint8_t cmd);
-    void _writeData8(uint8_t data);
-    void _writeCmd16(uint16_t cmd);
+    void _writeCommand(uint8_t cmd);
+    void _writeData(uint8_t data);
     void _writeData16(uint16_t data);
-    void _writeCmdData16(uint16_t cmd, uint16_t data);
-    void _writeCmdTransaction16(uint16_t cmd);
+    void _writeData16(uint16_t data, uint16_t n);
+    void _writeData16(const uint16_t* data, uint16_t n);
+    void _writeCommandData16(uint8_t cmd, uint16_t data);
     void _writeDataTransaction16(uint16_t data);
-    void _writeCmdDataTransaction16(uint16_t cmd, uint16_t data);
+    void _writeCommandDataTransaction16(uint8_t cmd, uint16_t data);
+    void _setWindowAddress(int16_t x1, int16_t y1, int16_t x2, int16_t y2);
     void _init_table16(const void *table, int16_t size);
-    void _pushColorsFast(const uint16_t* data, uint16_t n); // fast one
-    void _pushColorsFastWithByteSwapping(const uint16_t* data, uint16_t n); // fast one
   protected:
     uint16_t WIDTH, HEIGHT, _width, _height, _rotation;
   private:
     SPISettings _spi_settings;
     int8_t _cs, _cd, _rst, _led;
+    uint16_t _inversion_bit;
 };
 
 #ifdef _LCDWIKI_GUI_H_

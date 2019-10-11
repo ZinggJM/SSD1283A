@@ -23,6 +23,7 @@ SSD1283A::SSD1283A(int8_t cs, int8_t cd, int8_t rst, int8_t led) : Adafruit_GFX(
   _cd = cd;
   _rst = rst;
   _led = led;
+  _inversion_bit = 0;
   digitalWrite(_cs, HIGH);
   digitalWrite(_cd, HIGH);
   pinMode(cs, OUTPUT);	  // Enable outputs
@@ -43,6 +44,106 @@ SSD1283A::SSD1283A(int8_t cs, int8_t cd, int8_t rst, int8_t led) : Adafruit_GFX(
   _width = WIDTH;
   _height = HEIGHT;
 }
+
+// *** (overridden) virtual methods ***
+
+void SSD1283A::drawPixel(int16_t x, int16_t y, uint16_t color)
+{
+  if ((x < 0) || (y < 0) || (x >= _width) || (y >= _height))
+  {
+    return;
+  }
+  _startTransaction();
+  _setWindowAddress(x, y, x, y);
+  _writeData16(color);
+  _endTransaction();
+}
+
+void SSD1283A::fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color)
+{
+  //  if ((x < 0) || (y < 0) || (w < 1) || (h < 1) || (x + w > _width) || (y + h > _height))
+  //  {
+  //    Serial.print("fillRect("); Serial.print(x); Serial.print(", "); Serial.print(y); Serial.print(", "); Serial.print(w); Serial.print(", "); Serial.print(h); Serial.println(") oops? "); delay(1);
+  //  }
+  // a correct clipping is the goal. try to achieve this
+  if (x < 0) w += x, x = 0;
+  if (y < 0) h += y, y = 0;
+  if (x + w > _width) w = _width - x;
+  if (y + h > _height) h = _height - y;
+  if ((w < 1) || (h < 1)) return;
+  _startTransaction();
+  _setWindowAddress(x, y, x + w - 1, y + h - 1);
+  _writeCommand(0x22);
+  _writeData16(color, w * h);
+  _endTransaction();
+}
+
+void SSD1283A::drawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color)
+{
+  fillRect(x, y, 1, h, color);
+}
+
+void SSD1283A::drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color)
+{
+  fillRect(x, y, w, 1, color);
+}
+
+void SSD1283A::fillScreen(uint16_t color)
+{
+  fillRect(0, 0, WIDTH, HEIGHT, color);
+}
+
+void SSD1283A::setRotation(uint8_t r)
+{
+#ifdef _ADAFRUIT_GFX_H
+  Adafruit_GFX::setRotation(r);
+#endif
+  _rotation = r & 3;
+  _width = (_rotation & 1) ? HEIGHT : WIDTH;
+  _height = (_rotation & 1) ? WIDTH : HEIGHT;
+  _startTransaction();
+  switch (_rotation)
+  {
+    case 0:
+      _writeCommandData16(0x01, _inversion_bit | 0x2183);
+      _writeCommandData16(0x03, 0x6830);
+      break;
+    case 1:
+      //_writeCommandData16(0x01, _inversion_bit | 0x2283); // same as rotation 3, ok
+      //_writeCommandData16(0x03, 0x6838); // same as rotation 3, ok
+      // needed for canvas rotation, best compromise
+      _writeCommandData16(0x01, _inversion_bit | 0x2283); // bottom boarder bad
+      _writeCommandData16(0x03, 0x6808); // bottom boarder bad
+      break;
+    case 2:
+      //_writeCommandData16(0x01, _inversion_bit | 0x2183); // same as rotation 0, ok
+      //_writeCommandData16(0x03, 0x6830); // same as rotation 0, ok
+      // needed for canvas rotation, best compromise
+      _writeCommandData16(0x01, _inversion_bit | 0x2183); // r=2, left boarder bad
+      _writeCommandData16(0x03, 0x6800); // r=2, left boarder bad
+      // reg(0x01) bit RL 0x0100 doesn't work
+      //_writeCommandData16(0x01, _inversion_bit | 0x2083); // same as rotation 0, ok
+      //_writeCommandData16(0x03, 0x6830); // same as rotation 0, ok
+      //_writeCommandData16(0x01, _inversion_bit | 0x2383); // r=2, left & bottom boarder bad
+      //_writeCommandData16(0x03, 0x6820); // r=2, left & bottom boarder bad
+      break;
+    case 3:
+      _writeCommandData16(0x01, _inversion_bit | 0x2283);
+      _writeCommandData16(0x03, 0x6838);
+      break;
+  }
+  _endTransaction();
+  setWindowAddress(0, 0, _width - 1, _height - 1);
+  setVerticalScroll(0, HEIGHT, 0);
+}
+
+void SSD1283A::invertDisplay(bool i)
+{
+  _inversion_bit = i ? 0x0800 : 0x0000;
+  setRotation(_rotation);
+}
+
+// *** other public methods ***
 
 void SSD1283A::init(void)
 {
@@ -84,13 +185,41 @@ void SSD1283A::init(void)
     0x12, 0x0609,
     0x13, 0x3100,
   };
-  //Serial.println("init() 1");
   _init_table16(SSD1283A_regValues, sizeof(SSD1283A_regValues));
-  //Serial.println("init() 2");
   setRotation(_rotation);
-  //Serial.println("init() 3");
   invertDisplay(false);
-  //Serial.println("init() 4");
+}
+
+void SSD1283A::setWindowAddress(int16_t x1, int16_t y1, int16_t x2, int16_t y2)
+{
+  _startTransaction();
+  _setWindowAddress(x1, y1, x2, y2);
+  _endTransaction();
+}
+
+void SSD1283A::pushColors(const uint16_t* data, uint16_t n)
+{
+  _startTransaction();
+  _writeData16(data, n);
+  _endTransaction();
+}
+
+void SSD1283A::setVerticalScroll(int16_t top, int16_t scrollines, int16_t offset)
+{
+  int16_t bfa = HEIGHT - top - scrollines;
+  int16_t vsp;
+  int16_t sea = top;
+  if (offset <= -scrollines || offset >= scrollines)
+  {
+    offset = 0; //valid scroll
+  }
+  vsp = top + offset; // vertical start position
+  if (offset < 0)
+  {
+    vsp += scrollines;          //keep in unsigned range
+  }
+  sea = top + scrollines - 1;
+  _writeCommandDataTransaction16(0x41, vsp);
 }
 
 void SSD1283A::setBackLight(bool lit)
@@ -98,141 +227,23 @@ void SSD1283A::setBackLight(bool lit)
   if (_led >= 0) digitalWrite(_led, lit ? HIGH : LOW);
 }
 
-void SSD1283A::_startTransaction()
+uint16_t SSD1283A::color565(uint8_t r, uint8_t g, uint8_t b)
 {
-  SPI.beginTransaction(_spi_settings);
-  if (_cs >= 0) digitalWrite(_cs, LOW);
+  return ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
 }
 
-void SSD1283A::_endTransaction()
-{
-  if (_cs >= 0) digitalWrite(_cs, HIGH);
-  SPI.endTransaction();
-}
-
-void SSD1283A::_writeCmd8(uint8_t cmd)
-{
-  digitalWrite(_cd, LOW);
-  SPI.transfer(cmd);
-  digitalWrite(_cd, HIGH);
-}
-
-void SSD1283A::_writeData8(uint8_t data)
-{
-  digitalWrite(_cd, HIGH);
-  SPI.transfer(data);
-}
-
-void SSD1283A::_writeCmd16(uint16_t cmd)
-{
-  digitalWrite(_cd, LOW);
-  SPI.transfer(cmd >> 8);
-  SPI.transfer(cmd);
-  digitalWrite(_cd, HIGH);
-}
-void SSD1283A::_writeData16(uint16_t data)
-{
-  digitalWrite(_cd, HIGH);
-  SPI.transfer(data >> 8);
-  SPI.transfer(data);
-}
-
-void SSD1283A::_writeCmdData16(uint16_t cmd, uint16_t data)
-{
-  digitalWrite(_cd, LOW);
-  SPI.transfer(cmd >> 8);
-  SPI.transfer(cmd);
-  digitalWrite(_cd, HIGH);
-  SPI.transfer(data >> 8);
-  SPI.transfer(data);
-}
-
-void SSD1283A::_writeCmdTransaction16(uint16_t cmd)
-{
-  _startTransaction();
-  _writeCmd16(cmd);
-  _endTransaction();
-}
-
-void SSD1283A::_writeDataTransaction16(uint16_t data)
-{
-  _startTransaction();
-  _writeData16(data);
-  _endTransaction();
-}
-
-void SSD1283A::_writeCmdDataTransaction16(uint16_t cmd, uint16_t data)
-{
-  _startTransaction();
-  _writeCmdData16(cmd, data);
-  _endTransaction();
-}
-
-// Sets the LCD address window
-void SSD1283A::setWindowAddress(int16_t x1, int16_t y1, int16_t x2, int16_t y2)
-{
-  _startTransaction();
-  switch (_rotation)
-  {
-    case 0:
-      _writeCmd8(0x44);
-      _writeData8(x2 + 2);
-      _writeData8(x1 + 2);
-      _writeCmd8(0x45);
-      _writeData8(y2 + 2);
-      _writeData8(y1 + 2);
-      _writeCmd8(0x21);
-      _writeData8(y1 + 2);
-      _writeData8(x1 + 2);
-      break;
-    case 1:
-      _writeCmd8(0x44);
-      _writeData8(HEIGHT - y1 + 1);
-      _writeData8(HEIGHT - y2 + 1);
-      _writeCmd8(0x45);
-      _writeData8(WIDTH - x1 - 1);
-      _writeData8(WIDTH - x2 - 1);
-      _writeCmd8(0x21);
-      _writeData8(WIDTH - x2 - 1);
-      _writeData8(HEIGHT - y2 + 1);
-      break;
-    case 2:
-      _writeCmd8(0x44);
-      _writeData8(WIDTH - x1 + 1);
-      _writeData8(WIDTH - x2 + 1);
-      _writeCmd8(0x45);
-      _writeData8(HEIGHT - y1 + 1);
-      _writeData8(HEIGHT - y2 + 1);
-      _writeCmd8(0x21);
-      _writeData8(HEIGHT - y2 + 1);
-      _writeData8(WIDTH - x2 + 1);
-      break;
-    case 3:
-      _writeCmd8(0x44);
-      _writeData8(y2 + 2);
-      _writeData8(y1 + 2);
-      _writeCmd8(0x45);
-      _writeData8(x2);
-      _writeData8(x1);
-      _writeCmd8(0x21);
-      _writeData8(x1);
-      _writeData8(y1 + 2);
-      break;
-  }
-  _writeCmd8(0x22);
-  _endTransaction();
-}
+// *** leftover methods from LCDWIKI_SPI or for LCDWIKI_GUI ***
 
 void SSD1283A::pushColors(uint16_t * block, int16_t n, bool first, uint8_t flags)
 {
   uint16_t color;
   uint8_t h, l;
   bool isconst = flags & 1;
-  //	bool isbigend = (flags & 2) != 0;
+  //  bool isbigend = (flags & 2) != 0;
   _startTransaction();
   if (first)
   {
-    _writeCmd8(0x22);
+    _writeCommand(0x22);
   }
   while (n-- > 0)
   {
@@ -250,36 +261,84 @@ void SSD1283A::pushColors(uint16_t * block, int16_t n, bool first, uint8_t flags
   _endTransaction();
 }
 
-void SSD1283A::pushColors(const uint16_t* data, uint16_t n)
+int16_t SSD1283A::getWidth(void) const
 {
-  _startTransaction();
+  return _width;
+}
+
+int16_t SSD1283A::getHeight(void) const
+{
+  return _height;
+}
+
+uint8_t SSD1283A::getRotation(void) const
+{
+  return _rotation;
+}
+
+// *** private methods
+
+void SSD1283A::_startTransaction()
+{
+  SPI.beginTransaction(_spi_settings);
+  if (_cs >= 0) digitalWrite(_cs, LOW);
+}
+
+void SSD1283A::_endTransaction()
+{
+  if (_cs >= 0) digitalWrite(_cs, HIGH);
+  SPI.endTransaction();
+}
+
+void SSD1283A::_writeCommand(uint8_t cmd)
+{
+  digitalWrite(_cd, LOW);
+  SPI.transfer(cmd);
   digitalWrite(_cd, HIGH);
-#if (defined (ESP8266) || defined(ESP32) || (TEENSYDUINO == 147)) && true // faster
-  _pushColorsFastWithByteSwapping(data, n);
+}
+
+void SSD1283A::_writeData(uint8_t data)
+{
+  digitalWrite(_cd, HIGH);
+  SPI.transfer(data);
+}
+
+void SSD1283A::_writeData16(uint16_t data)
+{
+  digitalWrite(_cd, HIGH);
+#if (defined (ESP8266) || defined(ESP32)) && true // faster
+  SPI.write16(data);
+#else
+  SPI.transfer(data >> 8);
+  SPI.transfer(data);
+#endif
+}
+
+void SSD1283A::_writeData16(uint16_t data, uint16_t n)
+{
+  digitalWrite(_cd, HIGH);
+#if (defined (ESP8266) || defined(ESP32)) && true // fastest
+  uint16_t swapped = ((data << 8) | (data >> 8));
+  SPI.writePattern((uint8_t*)&swapped, 2, n);
+#elif (defined (ESP8266) || defined(ESP32)) && true // faster
+  uint16_t swapped = ((data << 8) | (data >> 8));
+  while (n-- > 0)
+  {
+    SPI.write16(swapped);
+  }
 #else
   while (n-- > 0)
   {
-    uint16_t color = (*data++);
-#if (defined (ESP8266) || defined(ESP32)) && true // faster
-    SPI.write16(color);
-#else
-    SPI.transfer(color >> 8);
-    SPI.transfer(color);
-#endif
+    SPI.transfer(data >> 8);
+    SPI.transfer(data);
   }
 #endif
-  _endTransaction();
 }
 
-void SSD1283A::_pushColorsFast(const uint16_t* data, uint16_t n)
+void SSD1283A::_writeData16(const uint16_t* data, uint16_t n)
 {
-#if (defined(NOT_YET_KNOWN_PROCESSOR) || defined(TEENSYDUINO)) // just in case 
-  SPI.transfer((uint8_t*)data, 0, 2 * n);
-#endif
-}
-
-void SSD1283A::_pushColorsFastWithByteSwapping(const uint16_t* data, uint16_t n)
-{
+  digitalWrite(_cd, HIGH);
+#if (defined (ESP8266) || defined(ESP32) || (TEENSYDUINO == 147)) && true // fastest
   static const uint16_t swap_buffer_size = 64; // optimal for ESP8266 SPI
   static const uint16_t max_chunk = swap_buffer_size / 2; // uint16_t's
   uint8_t swap_buffer[swap_buffer_size];
@@ -303,172 +362,93 @@ void SSD1283A::_pushColorsFastWithByteSwapping(const uint16_t* data, uint16_t n)
     SPI.transfer(swap_buffer, 0, 2 * chunk);
 #endif
   }
-}
-
-void SSD1283A::drawPixel(int16_t x, int16_t y, uint16_t color)
-{
-  if ((x < 0) || (y < 0) || (x > getWidth()) || (y > getHeight()))
+#else
+  while (n-- > 0)
   {
-    return;
-  }
-  setWindowAddress(x, y, x, y);
-  _startTransaction();
-  _writeData16(color);
-  _endTransaction();
-}
-
-void SSD1283A::fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color)
-{
-  int16_t end;
-  if (w < 0)
-  {
-    w = -w;
-    x -= w;
-  }                           //+ve w
-  end = x + w;
-  if (x < 0)
-  {
-    x = 0;
-  }
-  if (end > getWidth())
-  {
-    end = getWidth();
-  }
-  w = end - x;
-  if (h < 0)
-  {
-    h = -h;
-    y -= h;
-  }                           //+ve h
-  end = y + h;
-  if (y < 0)
-  {
-    y = 0;
-  }
-  if (end > getHeight())
-  {
-    end = getHeight();
-  }
-  h = end - y;
-  setWindowAddress(x, y, x + w - 1, y + h - 1);
-  _startTransaction();
-  _writeCmd8(0x22);
-  if (h > w)
-  {
-    end = h;
-    h = w;
-    w = end;
-  }
-  while (h-- > 0)
-  {
-    end = w;
-    do
-    {
-      _writeData16(color);
-    } while (--end != 0);
-  }
-  _endTransaction();
-}
-
-//Scroll display
-void SSD1283A::setVerticalScroll(int16_t top, int16_t scrollines, int16_t offset)
-{
-  int16_t bfa = HEIGHT - top - scrollines;
-  int16_t vsp;
-  int16_t sea = top;
-  if (offset <= -scrollines || offset >= scrollines)
-  {
-    offset = 0; //valid scroll
-  }
-  vsp = top + offset; // vertical start position
-  if (offset < 0)
-  {
-    vsp += scrollines;          //keep in unsigned range
-  }
-  sea = top + scrollines - 1;
-  _writeCmdDataTransaction16(0x41, vsp);
-}
-
-//get lcd width
-int16_t SSD1283A::getWidth(void) const
-{
-  return _width;
-}
-
-//get lcd height
-int16_t SSD1283A::getHeight(void) const
-{
-  return _height;
-}
-
-//set clockwise rotation
-void SSD1283A::setRotation(uint8_t r)
-{
-#ifdef _ADAFRUIT_GFX_H
-  Adafruit_GFX::setRotation(r);
+    uint16_t color = (*data++);
+#if (defined (ESP8266) || defined(ESP32)) && true // faster
+    SPI.write16(color);
+#else
+    SPI.transfer(color >> 8);
+    SPI.transfer(color);
 #endif
-  _rotation = r & 3;           // just perform the operation ourselves on the protected variables
-  _width = (_rotation & 1) ? HEIGHT : WIDTH;
-  _height = (_rotation & 1) ? WIDTH : HEIGHT;
+  }
+#endif
+}
+
+void SSD1283A::_writeCommandData16(uint8_t cmd, uint16_t data)
+{
+  digitalWrite(_cd, LOW);
+  SPI.transfer(cmd);
+  digitalWrite(_cd, HIGH);
+  SPI.transfer(data >> 8);
+  SPI.transfer(data);
+}
+
+void SSD1283A::_writeDataTransaction16(uint16_t data)
+{
   _startTransaction();
+  _writeData16(data);
+  _endTransaction();
+}
+
+void SSD1283A::_writeCommandDataTransaction16(uint8_t cmd, uint16_t data)
+{
+  _startTransaction();
+  _writeCommandData16(cmd, data);
+  _endTransaction();
+}
+
+void SSD1283A::_setWindowAddress(int16_t x1, int16_t y1, int16_t x2, int16_t y2)
+{
   switch (_rotation)
   {
     case 0:
-    case 2:
-      _writeCmdData16(0x01, 0x2183);
-      _writeCmdData16(0x03, 0x6830);
+      _writeCommand(0x44);
+      _writeData(x2 + 2);
+      _writeData(x1 + 2);
+      _writeCommand(0x45);
+      _writeData(y2 + 2);
+      _writeData(y1 + 2);
+      _writeCommand(0x21);
+      _writeData(y1 + 2);
+      _writeData(x1 + 2);
       break;
     case 1:
+      _writeCommand(0x44);
+      _writeData(HEIGHT - y1 + 1);
+      _writeData(HEIGHT - y2 + 1);
+      _writeCommand(0x45);
+      _writeData(WIDTH - x1 - 1);
+      _writeData(WIDTH - x2 - 1);
+      _writeCommand(0x21);
+      _writeData(WIDTH - x2 - 1);
+      _writeData(HEIGHT - y2 + 1);
+      break;
+    case 2:
+      _writeCommand(0x44);
+      _writeData(WIDTH - x1 + 1);
+      _writeData(WIDTH - x2 + 1);
+      _writeCommand(0x45);
+      _writeData(HEIGHT - y1 + 1);
+      _writeData(HEIGHT - y2 + 1);
+      _writeCommand(0x21);
+      _writeData(HEIGHT - y2 + 1);
+      _writeData(WIDTH - x2 + 1);
+      break;
     case 3:
-      _writeCmdData16(0x01, 0x2283);
-      _writeCmdData16(0x03, 0x6838);
+      _writeCommand(0x44);
+      _writeData(y2 + 2);
+      _writeData(y1 + 2);
+      _writeCommand(0x45);
+      _writeData(x2);
+      _writeData(x1);
+      _writeCommand(0x21);
+      _writeData(x1);
+      _writeData(y1 + 2);
       break;
   }
-  _endTransaction();
-  setWindowAddress(0, 0, _width - 1, _height - 1);
-  setVerticalScroll(0, HEIGHT, 0);
-}
-
-//get current rotation
-//0  :  0 degree
-//1  :  90 degree
-//2  :  180 degree
-//3  :  270 degree
-uint8_t SSD1283A::getRotation(void) const
-{
-  return _rotation;
-}
-
-//Anti color display
-void SSD1283A::invertDisplay(boolean i)
-{
-  _startTransaction();
-  uint8_t val = 1 ^ i;
-  uint16_t reg;
-  if ((_rotation == 0) || (_rotation == 2))
-  {
-    if (val)
-    {
-      reg = 0x2183;
-    }
-    else
-    {
-      reg = 0x0183;
-    }
-  }
-  else if ((_rotation == 1) || (_rotation == 3))
-  {
-    if (val)
-    {
-      reg = 0x2283;
-    }
-    else
-    {
-      reg = 0x0283;
-    }
-  }
-  _writeCmdData16(0x01, reg);
-  _endTransaction();
+  _writeCommand(0x22);
 }
 
 void SSD1283A::_init_table16(const void *table, int16_t size)
@@ -484,13 +464,8 @@ void SSD1283A::_init_table16(const void *table, int16_t size)
     }
     else
     {
-      _writeCmdDataTransaction16(cmd, d);
+      _writeCommandDataTransaction16(cmd, d);
     }
     size -= 2 * sizeof(int16_t);
   }
-}
-
-uint16_t SSD1283A::color565(uint8_t r, uint8_t g, uint8_t b)
-{
-  return ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
 }
