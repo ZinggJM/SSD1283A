@@ -1,5 +1,6 @@
 // created by Jean-Marc Zingg to be a standalone SSD1283A library (instead of the GxCTRL_SSD1283A class for the GxTFT library)
 // code extracts taken from https://github.com/lcdwiki/LCDWIKI_SPI
+// code extracts taken from https://github.com/adafruit/Adafruit-GFX-Library
 //
 // License: GNU GENERAL PUBLIC LICENSE V3, see LICENSE
 //
@@ -230,6 +231,43 @@ void SSD1283A::setBackLight(bool lit)
 uint16_t SSD1283A::color565(uint8_t r, uint8_t g, uint8_t b)
 {
   return ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
+}
+
+// code extract taken from Adafruit_SPITFT::drawRGBBitmap https://github.com/adafruit/Adafruit-GFX-Library
+void SSD1283A::drawRGBBitmap(int16_t x, int16_t y, uint16_t *pcolors, int16_t w, int16_t h)
+{
+  int16_t x2, y2; // Lower-right coord
+  if (( x             >= _width ) ||     // Off-edge right
+      ( y             >= _height) ||      // " top
+      ((x2 = (x + w - 1)) <  0      ) ||  // " left
+      ((y2 = (y + h - 1)) <  0)     ) return; // " bottom
+
+  int16_t bx1 = 0, by1 = 0; // Clipped top-left within bitmap
+  int16_t saveW = w;        // Save original bitmap width value
+  if (x < 0) // Clip left
+  {
+    w  +=  x;
+    bx1 = -x;
+    x   =  0;
+  }
+  if (y < 0) // Clip top
+  {
+    h  +=  y;
+    by1 = -y;
+    y   =  0;
+  }
+  if (x2 >= _width ) w = _width  - x; // Clip right
+  if (y2 >= _height) h = _height - y; // Clip bottom
+
+  pcolors += by1 * saveW + bx1; // Offset bitmap ptr to clipped top-left
+  _startTransaction();
+  _setWindowAddress(x, y, x + w - 1, y + h - 1); // Clipped area
+  while (h--) // For each (clipped) scanline...
+  {
+    _writeData16(pcolors, w); // Push one (clipped) row
+    pcolors += saveW; // Advance pointer by one full (unclipped) line
+  }
+  _endTransaction();
 }
 
 // *** leftover methods from LCDWIKI_SPI or for LCDWIKI_GUI ***

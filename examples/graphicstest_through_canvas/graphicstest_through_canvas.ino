@@ -46,17 +46,13 @@ GFXcanvas16 canvas(130, 130);
 
 void show_canvas_on_screen()
 {
-  screen.setWindowAddress(0, 0, screen.width() - 1, screen.height() - 1);
-  //screen.pushColors(canvas.getBuffer(), canvas.width() * canvas.height(), true, 0); // too slow
-  screen.pushColors(canvas.getBuffer(), canvas.width() * canvas.height()); // slighly faster
+  screen.drawRGBBitmap(0, 0, canvas.getBuffer(), canvas.width(), canvas.height());
 }
 
 void show_canvas_on_screen_timed()
 {
   uint32_t start = micros();
-  screen.setWindowAddress(0, 0, screen.width() - 1, screen.height() - 1);
-  //screen.pushColors(canvas.getBuffer(), canvas.width() * canvas.height(), true, 0); // 106ms
-  screen.pushColors(canvas.getBuffer(), canvas.width() * canvas.height()); // 86ms, 17ms on ESP8266, 24ms on ESP32
+  screen.drawRGBBitmap(0, 0, canvas.getBuffer(), canvas.width(), canvas.height());
   uint32_t elapsed = micros() - start;
   Serial.print(F("show_canvas_on_screen    ")); Serial.println(elapsed);
 }

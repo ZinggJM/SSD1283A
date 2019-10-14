@@ -74,16 +74,21 @@ void loop()
 }
 
 GFXcanvas16 canvas(130, 130);
-//GFXcanvas16 canvas(120, 120);
 
 void show_canvas_on_screen_timed()
 {
   uint32_t start = micros();
-  mylcd.setWindowAddress(0, 0, canvas.width() - 1, canvas.height() - 1);
-  //mylcd.setWindowAddress(5, 5, 5 + canvas.width() - 1, 5 + canvas.height() - 1);
-  mylcd.pushColors(canvas.getBuffer(), canvas.width() * canvas.height()); // 86ms, 17ms on ESP8266, 24ms on ESP32
+  //mylcd.setWindowAddress(0, 0, canvas.width() - 1, canvas.height() - 1);
+  //mylcd.pushColors(canvas.getBuffer(), canvas.width() * canvas.height()); // 15ms on ESP8266, 13ms on ESP32
+  mylcd.drawRGBBitmap(0, 0, canvas.getBuffer(), canvas.width(), canvas.height());
   uint32_t elapsed = micros() - start;
   Serial.print(F("show_canvas_on_screen    ")); Serial.println(elapsed);
+  if ((1 == mylcd.getRotation()) || (2 == mylcd.getRotation()))
+  {
+    delay(2000); // show the issue
+    // fix the issue, slow!
+    mylcd.Adafruit_GFX::drawRGBBitmap(0, 0, canvas.getBuffer(), canvas.width(), canvas.height());
+  }
 }
 
 void testTextOnCanvas()

@@ -13,9 +13,13 @@ Only Mode 3 seems to work correctly, with both AM directions.
 
 Graphics drawing works with all 4 rotation directions, as far as tested (pushing same color).
 Bitmaps drawing, e.g. for canvas, using pushColors, works only correctly for rotation 0 and 3.
-Use rotation for drawing to the canvas, but use rotation 0 or 3 for pushing the canvas to screen.
+Use rotation for drawing to the canvas, but use only rotation 0 or 3 for pushing the canvas to screen.
 
-### Version 1.0.0
+### Version 1.0.1
+- added method drawRGBBitmap(), e.g. for fast canvas rendering
+- use rotation for drawing to the canvas, but use only rotation 0 or 3 for rendering the canvas to screen.
+- the "quick test" example src/src.ino shows the issue
+#### Version 1.0.0
 - improved rotation somewhat, see general remarks
 - fixed clipping (drawPixel, fillRect)
 - optimizations and cleanup
