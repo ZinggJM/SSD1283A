@@ -12,6 +12,8 @@
 #include <Arduino.h>
 #include <SPI.h>
 
+#include "GFXcanvas16T.h"
+
 #if defined(__AVR__) || defined(__arm__)
 #include <avr/pgmspace.h>
 #elif defined(ESP8266) || defined(ESP32)
@@ -49,6 +51,7 @@ class SSD1283A : public Adafruit_GFX
     void setBackLight(bool lit);
     uint16_t color565(uint8_t r, uint8_t g, uint8_t b);
     void drawRGBBitmap(int16_t x, int16_t y, uint16_t *pcolors, int16_t w, int16_t h);
+    void drawRGBBitmap(int16_t x, int16_t y, const uint16_t bitmap[], int16_t w, int16_t h);
     // leftover methods from LCDWIKI_SPI or for LCDWIKI_GUI
     void pushColors(uint16_t * block, int16_t n, bool first, uint8_t flags);
     int16_t getWidth(void) const;

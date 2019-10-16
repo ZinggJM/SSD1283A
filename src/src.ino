@@ -39,6 +39,7 @@ void setup()
   Serial.println("init() done");
   mylcd.Fill_Screen(BLACK);
   Serial.println("setup done");
+  //testTextOnCanvas();
 }
 
 void loop()
@@ -73,7 +74,31 @@ void loop()
   testTextOnCanvas();
 }
 
-GFXcanvas16 canvas(130, 130);
+#if !(defined (ESP8266) || defined (ESP32)) || false
+
+#include "test_canvas.h"
+
+void testTextOnCanvas()
+{
+  for (uint8_t r = 0; r < 4; r++)
+  {
+    mylcd.setRotation(r);
+    mylcd.Fill_Screen(BLACK);
+    uint32_t start = micros();
+    uint16_t h = sizeof(test_canvas) / 130 / 2; // reduced size on AVR
+    mylcd.drawRGBBitmap(0, 0, test_canvas, 130, h);
+    uint32_t elapsed = micros() - start;
+    Serial.print(F("drawRGBBitmap(0, 0, test_canvas, 130, h) took ")); Serial.println(elapsed);
+    delay(5000);
+  }
+}
+
+#else
+
+//GFXcanvas16 canvas(130, 130); // uses heap space
+
+// let the linker complain if not enough ram
+GFXcanvas16T<130, 130> canvas; // uses dynamic memory space
 
 void show_canvas_on_screen_timed()
 {
@@ -116,6 +141,11 @@ void testTextOnCanvas()
   canvas.println("in the gobberwarts");
   canvas.println("with my blurglecruncheon,");
   canvas.println("see if I don't!");
+
+  static bool first = true;
+  //if (first) canvas.print(Serial, "test_canvas", true);
+  first = false;
+
   for (uint8_t r = 0; r < 4; r++)
   {
     mylcd.setRotation(r);
@@ -124,3 +154,4 @@ void testTextOnCanvas()
     delay(5000);
   }
 }
+#endif

@@ -15,7 +15,10 @@ Graphics drawing works with all 4 rotation directions, as far as tested (pushing
 Bitmaps drawing, e.g. for canvas, using pushColors, works only correctly for rotation 0 and 3.
 Use rotation for drawing to the canvas, but use only rotation 0 or 3 for pushing the canvas to screen.
 
-### Version 1.0.1
+### Version 1.0.2
+- added template class GFXcanvas16T, uses dynamic memory space instead of heap space
+- added method drawRGBBitmap() for PROGMEM bitmaps
+#### Version 1.0.1
 - added method drawRGBBitmap(), e.g. for fast canvas rendering
 - use rotation for drawing to the canvas, but use only rotation 0 or 3 for rendering the canvas to screen.
 - the "quick test" example src/src.ino shows the issue
