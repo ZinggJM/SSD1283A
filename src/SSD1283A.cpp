@@ -105,28 +105,18 @@ void SSD1283A::setRotation(uint8_t r)
   _startTransaction();
   switch (_rotation)
   {
+    // reg(0x01) bit RL 0x0100 doesn't work
     case 0:
       _writeCommandData16(0x01, _inversion_bit | 0x2183);
       _writeCommandData16(0x03, 0x6830);
       break;
     case 1:
-      //_writeCommandData16(0x01, _inversion_bit | 0x2283); // same as rotation 3, ok
-      //_writeCommandData16(0x03, 0x6838); // same as rotation 3, ok
-      // needed for canvas rotation, best compromise
-      _writeCommandData16(0x01, _inversion_bit | 0x2283); // bottom boarder bad
-      _writeCommandData16(0x03, 0x6808); // bottom boarder bad
+      _writeCommandData16(0x01, _inversion_bit | 0x2283);
+      _writeCommandData16(0x03, 0x6808);
       break;
     case 2:
-      //_writeCommandData16(0x01, _inversion_bit | 0x2183); // same as rotation 0, ok
-      //_writeCommandData16(0x03, 0x6830); // same as rotation 0, ok
-      // needed for canvas rotation, best compromise
-      _writeCommandData16(0x01, _inversion_bit | 0x2183); // r=2, left boarder bad
-      _writeCommandData16(0x03, 0x6800); // r=2, left boarder bad
-      // reg(0x01) bit RL 0x0100 doesn't work
-      //_writeCommandData16(0x01, _inversion_bit | 0x2083); // same as rotation 0, ok
-      //_writeCommandData16(0x03, 0x6830); // same as rotation 0, ok
-      //_writeCommandData16(0x01, _inversion_bit | 0x2383); // r=2, left & bottom boarder bad
-      //_writeCommandData16(0x03, 0x6820); // r=2, left & bottom boarder bad
+      _writeCommandData16(0x01, _inversion_bit | 0x2183);
+      _writeCommandData16(0x03, 0x6800);
       break;
     case 3:
       _writeCommandData16(0x01, _inversion_bit | 0x2283);
@@ -493,6 +483,7 @@ void SSD1283A::_setWindowAddress(int16_t x1, int16_t y1, int16_t x2, int16_t y2)
       _writeCommand(0x21);
       _writeData(y1 + 2);
       _writeData(x1 + 2);
+      //Serial.print("_setWindowAddress "); Serial.print(y1 + 2); Serial.print(", "); Serial.println(x1 + 2);
       break;
     case 1:
       _writeCommand(0x44);
@@ -502,8 +493,9 @@ void SSD1283A::_setWindowAddress(int16_t x1, int16_t y1, int16_t x2, int16_t y2)
       _writeData(WIDTH - x1 - 1);
       _writeData(WIDTH - x2 - 1);
       _writeCommand(0x21);
-      _writeData(WIDTH - x2 - 1);
-      _writeData(HEIGHT - y2 + 1);
+      _writeData(WIDTH - x1 - 1);
+      _writeData(HEIGHT - y1 + 1);
+      //Serial.print("_setWindowAddress "); Serial.print(WIDTH - x1 - 1); Serial.print(", "); Serial.println(HEIGHT - y1 + 1);
       break;
     case 2:
       _writeCommand(0x44);
@@ -513,8 +505,9 @@ void SSD1283A::_setWindowAddress(int16_t x1, int16_t y1, int16_t x2, int16_t y2)
       _writeData(HEIGHT - y1 + 1);
       _writeData(HEIGHT - y2 + 1);
       _writeCommand(0x21);
-      _writeData(HEIGHT - y2 + 1);
-      _writeData(WIDTH - x2 + 1);
+      _writeData(HEIGHT - y1 + 1);
+      _writeData(WIDTH - x1 + 1);
+      //Serial.print("_setWindowAddress "); Serial.print(HEIGHT - y1 + 1); Serial.print(", "); Serial.println(WIDTH - x1 + 1);
       break;
     case 3:
       _writeCommand(0x44);
@@ -526,6 +519,7 @@ void SSD1283A::_setWindowAddress(int16_t x1, int16_t y1, int16_t x2, int16_t y2)
       _writeCommand(0x21);
       _writeData(x1);
       _writeData(y1 + 2);
+      //Serial.print("_setWindowAddress "); Serial.print(x1); Serial.print(", "); Serial.println(y1 + 2);
       break;
   }
   _writeCommand(0x22);

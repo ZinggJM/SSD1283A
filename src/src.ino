@@ -108,12 +108,6 @@ void show_canvas_on_screen_timed()
   mylcd.drawRGBBitmap(0, 0, canvas.getBuffer(), canvas.width(), canvas.height());
   uint32_t elapsed = micros() - start;
   Serial.print(F("show_canvas_on_screen    ")); Serial.println(elapsed);
-  if ((1 == mylcd.getRotation()) || (2 == mylcd.getRotation()))
-  {
-    delay(2000); // show the issue
-    // fix the issue, slow!
-    mylcd.Adafruit_GFX::drawRGBBitmap(0, 0, canvas.getBuffer(), canvas.width(), canvas.height());
-  }
 }
 
 void testTextOnCanvas()

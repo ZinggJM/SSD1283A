@@ -6,16 +6,9 @@ The code is extracted from LCDWIKI_SPI and adapted for single controller use and
 
 Only HW SPI is supported.
 
-### General Remark
-
-The SSD1283A controller seems to have an issue with data entry modes.
-Only Mode 3 seems to work correctly, with both AM directions.
-
-Graphics drawing works with all 4 rotation directions, as far as tested (pushing same color).
-Bitmaps drawing, e.g. for canvas, using pushColors, works only correctly for rotation 0 and 3.
-Use rotation for drawing to the canvas, but use only rotation 0 or 3 for pushing the canvas to screen.
-
-### Version 1.0.2
+### Version 1.0.3
+- fixed rotation (rendering canvas ok for all 4 rotations)
+#### Version 1.0.2
 - added template class GFXcanvas16T, uses dynamic memory space instead of heap space
 - added method drawRGBBitmap() for PROGMEM bitmaps
 #### Version 1.0.1
